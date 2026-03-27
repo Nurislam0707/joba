@@ -77,13 +77,13 @@
                     
                     <!-- Language Switcher -->
                     <div class="flex items-center space-x-2">
-                        <button onclick="changeLanguage('ru')" class="lang-btn {{ app()->getLocale() == 'ru' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
+                        <button data-lang="ru" class="lang-btn {{ app()->getLocale() == 'ru' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
                             RU
                         </button>
-                        <button onclick="changeLanguage('en')" class="lang-btn {{ app()->getLocale() == 'en' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
+                        <button data-lang="en" class="lang-btn {{ app()->getLocale() == 'en' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
                             EN
                         </button>
-                        <button onclick="changeLanguage('kz')" class="lang-btn {{ app()->getLocale() == 'kz' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
+                        <button data-lang="kz" class="lang-btn {{ app()->getLocale() == 'kz' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors">
                             KZ
                         </button>
                     </div>
@@ -141,13 +141,13 @@
                     
                     <!-- Mobile Language Switcher -->
                     <div class="flex space-x-2 px-3 py-2">
-                        <button onclick="changeLanguage('ru')" class="lang-btn {{ app()->getLocale() == 'ru' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
+                        <button data-lang="ru" class="lang-btn {{ app()->getLocale() == 'ru' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
                             RU
                         </button>
-                        <button onclick="changeLanguage('en')" class="lang-btn {{ app()->getLocale() == 'en' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
+                        <button data-lang="en" class="lang-btn {{ app()->getLocale() == 'en' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
                             EN
                         </button>
-                        <button onclick="changeLanguage('kz')" class="lang-btn {{ app()->getLocale() == 'kz' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
+                        <button data-lang="kz" class="lang-btn {{ app()->getLocale() == 'kz' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700' }} px-3 py-1 rounded text-sm font-medium transition-colors flex-1">
                             KZ
                         </button>
                     </div>
@@ -249,23 +249,41 @@
             });
         });
 
-        // Language change function
+        // Language change function (used by event listeners)
         function changeLanguage(lang) {
             fetch('/change-language', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({ locale: lang })
             })
-            .then(response => response.json())
+            .then(response => {
+                // try parse JSON safely
+                return response.json().catch(() => null);
+            })
             .then(data => {
-                if (data.success) {
+                // if server returned success or no error, reload
+                if (!data || data.success) {
                     location.reload();
+                } else if (data && data.error) {
+                    showNotification(data.error, 'error');
                 }
+            }).catch(err => {
+                console.error('Language change failed', err);
+                showNotification('Не удалось сменить язык', 'error');
             });
         }
+
+        // Attach click listeners to language buttons
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                const lang = this.getAttribute('data-lang');
+                if (lang) changeLanguage(lang);
+            });
+        });
 
         // Notification display
         @if(session('success'))

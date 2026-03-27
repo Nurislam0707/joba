@@ -28,6 +28,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 // Смена языка
 Route::post('/change-language', [LocalizationController::class, 'changeLanguage'])->name('change-language');
+// also allow simple GET links like /language/en
+Route::get('/language/{locale}', [LocalizationController::class, 'changeLanguage'])->name('language.change');
 
 // Защищенные маршруты
 Route::middleware(['auth'])->group(function () {
